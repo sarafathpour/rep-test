@@ -1,7 +1,7 @@
 <?php
 require("./class.php");
 header('Content-Type: application/json');
-$user = new Func("users", "milogy", ["username"]);
+$user = new MyApi("users", "milogy", ["username"]);
 $state = $user->getErrorConnection();
 if (isset($state)) {
     header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error', true, 500);
@@ -19,7 +19,7 @@ if ($request == "post") {
         die("Some fields are not entered");
     }
     $username = $data["username"];
-    $password = $data["password"];
+    $password = password_hash($data["password"],PASSWORD_DEFAULT);
     $firstname = $data["firstname"];
     $lastname = $data["lastname"];
     $res = $user->create(["username" => $username, "password" => $password, "firstname" => $firstname, "lastname" => $lastname]);
@@ -57,7 +57,7 @@ elseif ($request == "put") {
     }
     $userid = (int) $_GET["userid"];
     $username = $data["username"];
-    $password = $data["password"];
+    $password =  password_hash($data["password"],PASSWORD_DEFAULT);
     $firstname = $data["firstname"];
     $lastname = $data["lastname"];
 

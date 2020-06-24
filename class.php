@@ -1,5 +1,5 @@
 <?php
-class Func
+class MyApi
 {
     private $conn, $tbl, $fields, $error_connecttion = null, $unique_fields = null;
     public function __construct($tableName, $dbName, $unique = null)
@@ -185,4 +185,5 @@ class Func
             return $row;
         return false;
     }
+   
 }
