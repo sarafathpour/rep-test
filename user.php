@@ -7,7 +7,7 @@ if (isset($state)) {
     header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error', true, 500);
     echo json_encode($state);
 }
-$user->setFields(["username", "password", "firstname", "lastname"]);
+$user->setFields(["userid", "username", "firstname", "lastname"]);
 $request = $_SERVER['REQUEST_METHOD'];
 $request = strtolower($_SERVER['REQUEST_METHOD']);
 ////? Create

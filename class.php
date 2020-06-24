@@ -1,7 +1,7 @@
 <?php
 class MyApi
 {
-    private $conn, $tbl, $fields, $error_connecttion = null, $unique_fields = null;
+    private $conn, $tbl, $allowFields, $error_connecttion = null, $unique_fields = null;
     public function __construct($tableName, $dbName, $unique = null)
     {
         if (isset($unique))
@@ -51,7 +51,7 @@ class MyApi
     }
     public function setFields(array $fields)
     {
-        $this->fields = $fields;
+        $this->allowFields = $fields;
     }
     private function existUniqueField($values)
     {
@@ -77,18 +77,18 @@ class MyApi
     {
         // var_dump($this->unique_fields);
         // var_dump(!$this->readRow([$this->unique_fields[0]=>$values[$this->unique_fields[0]]]));
-        $unique=$this->unique_fields;
-        if (($this->readRow([$unique[0]=>$values[$unique[0]]])))
-        {
-            $this->setErrorConnection([
-                "error-code" => 500,
-                "error-message" => "$unique[0] has already been registered"
-            ]);
-            return false;
-        }
-        if (sizeof($unique) > 0)
+        $unique = $this->unique_fields;
+        if ($unique != null) {
             if ($this->existUniqueField($values))
                 return false;
+            if (($this->readRow([$unique[0] => $values[$unique[0]]]))) {
+                $this->setErrorConnection([
+                    "error-code" => 500,
+                    "error-message" => "$unique[0] has already been registered"
+                ]);
+                return false;
+            }
+        }
         $fields = array_keys($values);
         $fields = implode(", ", $fields);
         ////*
@@ -98,17 +98,22 @@ class MyApi
         $place = str_repeat('?, ', $num - 1) . " ?";
         ////*
         $query = "INSERT INTO $this->tbl ($fields) VALUES ($place)";
-        $stmt = $this->conn->prepare($query);
 
-        if ($stmt->execute($param))
-            return $this->readRow(["username" => $values["username"]]);
-        else return false;
+        $stmt = $this->conn->prepare($query);
+        if ($stmt->execute($param)) {
+            $i = $this->fields[0];
+            $q = $this->conn->query("SELECT $i FROM $this->tbl ORDER BY $i DESC LIMIT 1");
+            $id = $q->fetchColumn();
+
+            return $this->readRow([$this->fields[0] => $id]);
+        } else return false;
     }
     ////* Read
     public function readRow($cond = null, $operator = 'AND')
     {
+        $allow = implode(", ", $this->allowFields);
         if (!isset($cond)) {
-            $query = "SELECT userid, username, firstname, lastname FROM $this->tbl";
+            $query = "SELECT $allow FROM $this->tbl";
             $stmt = $this->conn->prepare($query);
             $stmt->execute();
         } else {
@@ -119,7 +124,7 @@ class MyApi
             });
 
             $keys_cond = count($cond) > 1 ? implode($operator, $keys_cond) : $keys_cond[0]; //! $operator = OR or AND
-            $query = "SELECT userid, username, firstname, lastname FROM $this->tbl WHERE $keys_cond";
+            $query = "SELECT $allow FROM $this->tbl WHERE $keys_cond";
             $stmt = $this->conn->prepare($query);
             $stmt->execute($values_cond);
         }
@@ -160,9 +165,9 @@ class MyApi
         $values = array_merge($values_newVal, $values_cond); ////! merge values
         $query = "UPDATE $this->tbl SET $fields_newVal WHERE $fields_cond";
         $stmt = $this->conn->prepare($query);
-        if ($stmt->execute($values))
-            return $this->readRow(["username" => $newVal["username"]]);
-        else return false;
+        if ($stmt->execute($values)) {
+            return $this->readRow($cond);
+        } else return false;
     }
     ////* Delete
     public function delete(array $cond)
@@ -185,5 +190,4 @@ class MyApi
             return $row;
         return false;
     }
-   
 }
